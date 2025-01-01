@@ -92,7 +92,7 @@ def main():
     # Training Parameters
     batch_size = 128
     epochs = 15
-    lr = 0.05  # Increased learning rate
+    lr = 0.1  # Increased from 0.05 to 0.1
     momentum = 0.9
     
     # Calculate mean and std of CIFAR10
@@ -122,11 +122,11 @@ def main():
     scheduler = ReduceLROnPlateau(
         optimizer,
         mode='min',
-        factor=0.3,
-        patience=2,
+        factor=0.5,    # Changed from 0.3 to 0.5
+        patience=1,    # Changed from 2 to 1
         verbose=True,
         min_lr=1e-4,
-        threshold=1e-3
+        threshold=1e-2  # Changed from 1e-3 to 1e-2
     )
     
     # Training and testing logs
