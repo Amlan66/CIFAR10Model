@@ -6,10 +6,10 @@ import numpy as np
 from tqdm import tqdm
 from models.model import DilatedNet
 from utils.transforms import get_transforms
-from torch.optim.lr_scheduler import StepLR
+from torch.optim.lr_scheduler import OneCycleLR
 import torchinfo
 
-def train(model, device, train_loader, optimizer, epoch, criterion):
+def train(model, device, train_loader, optimizer, epoch, criterion, scheduler):
     model.train()
     pbar = tqdm(train_loader)
     correct = 0
@@ -34,6 +34,7 @@ def train(model, device, train_loader, optimizer, epoch, criterion):
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         
         optimizer.step()
+        scheduler.step()  # Step the scheduler every batch
         
         # Update Progress Bar
         pred = pred.argmax(dim=1, keepdim=True)
@@ -115,6 +116,10 @@ def main():
     model = DilatedNet().to(device)
     get_model_summary(model, input_size=(batch_size, 3, 32, 32))
     
+    # Calculate total steps for OneCycleLR
+    total_steps = epochs * len(train_loader)
+    pct_start = 0.3
+    
     optimizer = optim.SGD(
         model.parameters(),
         lr=0.1,
@@ -124,11 +129,16 @@ def main():
     )
     criterion = nn.CrossEntropyLoss()
     
-    # Replace ReduceLROnPlateau with StepLR
-    scheduler = StepLR(
+    # Replace StepLR with OneCycleLR
+    scheduler = OneCycleLR(
         optimizer,
-        step_size=5,    # Step down every 5 epochs
-        gamma=0.1       # Multiply LR by 0.1 at each step
+        max_lr=1.0,
+        total_steps=total_steps,
+        pct_start=pct_start,
+        div_factor=10.0,     # initial_lr = max_lr/div_factor
+        final_div_factor=1e4,  # min_lr = initial_lr/final_div_factor
+        three_phase=False,
+        anneal_strategy='linear'
     )
     
     # Training and testing logs
@@ -140,11 +150,8 @@ def main():
     # Training loop
     for epoch in range(1, epochs + 1):
         print(f"\nEpoch {epoch}")
-        train_loss, train_acc = train(model, device, train_loader, optimizer, epoch, criterion)
+        train_loss, train_acc = train(model, device, train_loader, optimizer, epoch, criterion, scheduler)
         test_loss, test_acc = test(model, device, test_loader, criterion)
-        
-        # Step the scheduler after each epoch
-        scheduler.step()
         
         # Log metrics
         train_losses.append(train_loss)
