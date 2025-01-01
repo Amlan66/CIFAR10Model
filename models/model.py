@@ -17,41 +17,41 @@ class DilatedNet(nn.Module):
     def __init__(self):
         super().__init__()
         
-        # C1: Regular Conv2d (increased from 16 to 32)
+        # C1: Regular Conv2d (reduced to 24 channels)
         self.conv1 = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=3, padding=1),
-            nn.BatchNorm2d(32),
+            nn.Conv2d(3, 24, kernel_size=3, padding=1),
+            nn.BatchNorm2d(24),
             nn.ReLU(),
             nn.Dropout2d(0.1)
         )
         
-        # C2: Dilated Conv2d (increased from 32 to 64)
+        # C2: Dilated Conv2d (reduced to 48 channels)
         self.conv2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=3, padding=2, dilation=2),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(24, 48, kernel_size=3, padding=2, dilation=2),
+            nn.BatchNorm2d(48),
             nn.ReLU(),
             nn.Dropout2d(0.1)
         )
         
-        # C3: Depthwise Separable Conv (increased from 64 to 128)
+        # C3: Depthwise Separable Conv (reduced to 96 channels)
         self.conv3 = nn.Sequential(
-            DepthwiseSeparableConv(64, 128, stride=2),
-            nn.BatchNorm2d(128),
+            DepthwiseSeparableConv(48, 96, stride=2),
+            nn.BatchNorm2d(96),
             nn.ReLU(),
             nn.Dropout2d(0.1)
         )
         
-        # C4: Regular Conv2d with stride=2 (increased from 128 to 192)
+        # C4: Regular Conv2d with stride=2 (reduced to 128 channels)
         self.conv4 = nn.Sequential(
-            nn.Conv2d(128, 192, kernel_size=3, stride=2, padding=1),
-            nn.BatchNorm2d(192),
+            nn.Conv2d(96, 128, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.Dropout2d(0.1)
         )
         
         self.gap = nn.AdaptiveAvgPool2d(1)
         self.dropout = nn.Dropout(0.2)
-        self.fc = nn.Linear(192, 10)
+        self.fc = nn.Linear(128, 10)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -59,6 +59,6 @@ class DilatedNet(nn.Module):
         x = self.conv3(x)
         x = self.conv4(x)
         x = self.gap(x)
-        x = x.view(-1, 192)
+        x = x.view(-1, 128)
         x = self.fc(x)
         return x
