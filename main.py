@@ -8,9 +8,9 @@ from models.model import DilatedNet
 from utils.transforms import get_transforms
 import torch.nn.functional as F
 from torchinfo import torchinfo
-from torch.optim.lr_scheduler import OneCycleLR
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-def train(model, device, train_loader, optimizer, epoch, criterion, scheduler):
+def train(model, device, train_loader, optimizer, epoch, criterion):
     model.train()
     pbar = tqdm(train_loader)
     correct = 0
@@ -30,15 +30,18 @@ def train(model, device, train_loader, optimizer, epoch, criterion, scheduler):
         
         # Backpropagation
         loss.backward()
+        
+        # Add gradient clipping
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+        
         optimizer.step()
-        scheduler.step()
         
         # Update Progress Bar
         pred = pred.argmax(dim=1, keepdim=True)
         correct += pred.eq(target.view_as(pred)).sum().item()
         processed += len(data)
         
-        pbar.set_description(desc=f'Epoch={epoch} Loss={loss.item():.4f} Batch_id={batch_idx} Accuracy={100*correct/processed:0.2f} LR={scheduler.get_last_lr()[0]:.6f}')
+        pbar.set_description(desc=f'Epoch={epoch} Loss={loss.item():.4f} Batch_id={batch_idx} Accuracy={100*correct/processed:0.2f} LR={optimizer.param_groups[0]["lr"]:.6f}')
     
     return train_loss/len(train_loader), 100*correct/processed
 
@@ -140,25 +143,24 @@ def main():
     model = DilatedNet().to(device)
     get_model_summary(model, input_size=(batch_size, 3, 32, 32))
     
-    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
+    optimizer = optim.SGD(
+        model.parameters(),
+        lr=0.01,
+        momentum=0.9,
+        weight_decay=1e-4
+    )
     
     # Define the loss function
     criterion = nn.CrossEntropyLoss()
 
-    # Calculate total steps for OneCycleLR
-    total_steps = epochs * len(train_loader)
-    
-    # Initialize the OneCycleLR scheduler
-    scheduler = OneCycleLR(
+    # Replace OneCycleLR with ReduceLROnPlateau
+    scheduler = ReduceLROnPlateau(
         optimizer,
-        max_lr=0.1,
-        total_steps=total_steps,
-        epochs=epochs,
-        steps_per_epoch=len(train_loader),
-        pct_start=0.3,
-        anneal_strategy='cos',
-        div_factor=25.0,  # initial_lr = max_lr/div_factor
-        final_div_factor=1e4  # min_lr = initial_lr/final_div_factor
+        mode='min',
+        factor=0.5,
+        patience=2,
+        verbose=True,
+        min_lr=1e-4
     )
     
     # Training and testing logs
@@ -170,8 +172,11 @@ def main():
     # Training loop
     for epoch in range(1, epochs + 1):
         print(f"\nEpoch {epoch}")
-        train_loss, train_acc = train(model, device, train_loader, optimizer, epoch, criterion, scheduler)
+        train_loss, train_acc = train(model, device, train_loader, optimizer, epoch, criterion)
         test_loss, test_acc = test(model, device, test_loader, criterion)
+        
+        # Step the scheduler based on test loss
+        scheduler.step(test_loss)
         
         # Log metrics
         train_losses.append(train_loss)
@@ -181,7 +186,7 @@ def main():
         
         print(f"Train Loss: {train_loss:.4f}, Train Accuracy: {train_acc:.2f}%")
         print(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_acc:.2f}%")
-        print(f"Learning Rate: {scheduler.get_last_lr()[0]:.6f}")
+        print(f"Current Learning Rate: {optimizer.param_groups[0]['lr']:.6f}")
 
 if __name__ == '__main__':
     main() 

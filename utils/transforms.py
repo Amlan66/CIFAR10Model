@@ -11,6 +11,8 @@ def get_transforms(mean, std):
             fill_value=mean, mask_fill_value=None,
             p=0.5
         ),
+        A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
+        A.GaussNoise(var_limit=0.1, p=0.5),
         A.Normalize(mean=mean, std=std),
         ToTensorV2()
     ])

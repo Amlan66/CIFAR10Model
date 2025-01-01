@@ -17,35 +17,40 @@ class DilatedNet(nn.Module):
     def __init__(self):
         super().__init__()
         
-        # C1: Regular Conv2d (reduced to 16 channels)
+        # C1: Regular Conv2d
         self.conv1 = nn.Sequential(
             nn.Conv2d(3, 16, kernel_size=3, padding=1),
             nn.BatchNorm2d(16),
-            nn.ReLU()
+            nn.ReLU(),
+            nn.Dropout2d(0.1)
         )
         
-        # C2: Dilated Conv2d (reduced to 32 channels)
+        # C2: Dilated Conv2d
         self.conv2 = nn.Sequential(
             nn.Conv2d(16, 32, kernel_size=3, padding=2, dilation=2),
             nn.BatchNorm2d(32),
-            nn.ReLU()
+            nn.ReLU(),
+            nn.Dropout2d(0.1)
         )
         
-        # C3: Depthwise Separable Conv (reduced to 64 channels)
+        # C3: Depthwise Separable Conv
         self.conv3 = nn.Sequential(
             DepthwiseSeparableConv(32, 64, stride=2),
             nn.BatchNorm2d(64),
-            nn.ReLU()
+            nn.ReLU(),
+            nn.Dropout2d(0.1)
         )
         
-        # C4: Regular Conv2d with stride=2 (reduced to 128 channels)
+        # C4: Regular Conv2d with stride=2
         self.conv4 = nn.Sequential(
             nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm2d(128),
-            nn.ReLU()
+            nn.ReLU(),
+            nn.Dropout2d(0.1)
         )
         
         self.gap = nn.AdaptiveAvgPool2d(1)
+        self.dropout = nn.Dropout(0.2)
         self.fc = nn.Linear(128, 10)
 
     def forward(self, x):
