@@ -7,6 +7,7 @@ from tqdm import tqdm
 from models.model import DilatedNet
 from utils.transforms import get_transforms
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+import torchinfo
 
 def train(model, device, train_loader, optimizer, epoch, criterion):
     model.train()
