@@ -146,11 +146,11 @@ def main():
     for epoch in range(1, epochs + 1):
         print(f"\nEpoch {epoch}")
         train_loss, train_acc = train(model, device, train_loader, optimizer, epoch, criterion)
-        scheduler.step()
+        scheduler.step(train_loss)
         test_loss, test_acc = test(model, device, test_loader, criterion)
         
         # Step the scheduler based on test loss
-        scheduler.step(test_loss)
+        #scheduler.step(test_loss)
         
         # Log metrics
         train_losses.append(train_loss)
