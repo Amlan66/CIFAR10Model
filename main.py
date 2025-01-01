@@ -8,8 +8,9 @@ from models.model import DilatedNet
 from utils.transforms import get_transforms
 import torch.nn.functional as F
 from torchinfo import torchinfo
+from torch.optim.lr_scheduler import OneCycleLR
 
-def train(model, device, train_loader, optimizer, epoch, criterion):
+def train(model, device, train_loader, optimizer, epoch, criterion, scheduler):
     model.train()
     pbar = tqdm(train_loader)
     correct = 0
@@ -30,13 +31,14 @@ def train(model, device, train_loader, optimizer, epoch, criterion):
         # Backpropagation
         loss.backward()
         optimizer.step()
+        scheduler.step()
         
         # Update Progress Bar
         pred = pred.argmax(dim=1, keepdim=True)
         correct += pred.eq(target.view_as(pred)).sum().item()
         processed += len(data)
         
-        pbar.set_description(desc=f'Epoch={epoch} Loss={loss.item():.4f} Batch_id={batch_idx} Accuracy={100*correct/processed:0.2f}')
+        pbar.set_description(desc=f'Epoch={epoch} Loss={loss.item():.4f} Batch_id={batch_idx} Accuracy={100*correct/processed:0.2f} LR={scheduler.get_last_lr()[0]:.6f}')
     
     return train_loss/len(train_loader), 100*correct/processed
 
@@ -136,12 +138,28 @@ def main():
     
     # Initialize model, optimizer, and loss function
     model = DilatedNet().to(device)
-    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
-    criterion = nn.CrossEntropyLoss()
-    
-    # Add these lines after model initialization
-    batch_size = 128  # Using same batch_size as training
     get_model_summary(model, input_size=(batch_size, 3, 32, 32))
+    
+    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
+    
+    # Define the loss function
+    criterion = nn.CrossEntropyLoss()
+
+    # Calculate total steps for OneCycleLR
+    total_steps = epochs * len(train_loader)
+    
+    # Initialize the OneCycleLR scheduler
+    scheduler = OneCycleLR(
+        optimizer,
+        max_lr=0.1,
+        total_steps=total_steps,
+        epochs=epochs,
+        steps_per_epoch=len(train_loader),
+        pct_start=0.3,
+        anneal_strategy='cos',
+        div_factor=25.0,  # initial_lr = max_lr/div_factor
+        final_div_factor=1e4  # min_lr = initial_lr/final_div_factor
+    )
     
     # Training and testing logs
     train_losses = []
@@ -152,7 +170,7 @@ def main():
     # Training loop
     for epoch in range(1, epochs + 1):
         print(f"\nEpoch {epoch}")
-        train_loss, train_acc = train(model, device, train_loader, optimizer, epoch, criterion)
+        train_loss, train_acc = train(model, device, train_loader, optimizer, epoch, criterion, scheduler)
         test_loss, test_acc = test(model, device, test_loader, criterion)
         
         # Log metrics
@@ -163,6 +181,7 @@ def main():
         
         print(f"Train Loss: {train_loss:.4f}, Train Accuracy: {train_acc:.2f}%")
         print(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_acc:.2f}%")
+        print(f"Learning Rate: {scheduler.get_last_lr()[0]:.6f}")
 
 if __name__ == '__main__':
     main() 
