@@ -17,33 +17,33 @@ class DilatedNet(nn.Module):
     def __init__(self):
         super().__init__()
         
-        # C1: Regular Conv2d (reduced to 24 channels)
+        # C1: Regular Conv2d with large kernel
         self.conv1 = nn.Sequential(
-            nn.Conv2d(3, 24, kernel_size=3, padding=1),
+            nn.Conv2d(3, 24, kernel_size=7, stride=2, padding=3),  # Increased kernel size
             nn.BatchNorm2d(24),
             nn.ReLU(),
             nn.Dropout2d(0.1)
         )
         
-        # C2: Dilated Conv2d (reduced to 48 channels)
+        # C2: Dilated Conv2d with increased dilation
         self.conv2 = nn.Sequential(
-            nn.Conv2d(24, 48, kernel_size=3, padding=2, dilation=2),
+            nn.Conv2d(24, 48, kernel_size=5, stride=2, padding=8, dilation=4),  # Increased dilation
             nn.BatchNorm2d(48),
             nn.ReLU(),
             nn.Dropout2d(0.1)
         )
         
-        # C3: Depthwise Separable Conv (reduced to 96 channels)
+        # C3: Depthwise Separable Conv
         self.conv3 = nn.Sequential(
-            DepthwiseSeparableConv(48, 96, stride=2),
+            DepthwiseSeparableConv(48, 96, stride=2, padding=2),
             nn.BatchNorm2d(96),
             nn.ReLU(),
             nn.Dropout2d(0.1)
         )
         
-        # C4: Regular Conv2d with stride=2 (reduced to 128 channels)
+        # C4: Regular Conv2d with larger kernel
         self.conv4 = nn.Sequential(
-            nn.Conv2d(96, 128, kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(96, 128, kernel_size=5, stride=2, padding=2),
             nn.BatchNorm2d(128),
             nn.ReLU(),
             nn.Dropout2d(0.1)
