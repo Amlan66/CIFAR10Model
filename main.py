@@ -6,7 +6,7 @@ import numpy as np
 from tqdm import tqdm
 from models.model import DilatedNet
 from utils.transforms import get_transforms
-from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim.lr_scheduler import StepLR
 import torchinfo
 
 def train(model, device, train_loader, optimizer, epoch, criterion):
@@ -119,21 +119,16 @@ def main():
         model.parameters(),
         lr=0.1,
         momentum=0.9,
-        weight_decay=5e-4,  # Increased from 1e-4 for better regularization
-        nesterov=True       # Added Nesterov momentum
+        weight_decay=5e-4,
+        nesterov=True
     )
     criterion = nn.CrossEntropyLoss()
     
-    # Modified scheduler for better LR adjustment
-    scheduler = ReduceLROnPlateau(
+    # Replace ReduceLROnPlateau with StepLR
+    scheduler = StepLR(
         optimizer,
-        mode='min',
-        factor=0.2,         # More aggressive reduction
-        patience=2,         # Wait for 2 epochs
-        verbose=True,
-        min_lr=1e-4,
-        threshold=1e-3,
-        cooldown=1          # Add cooldown period
+        step_size=5,    # Step down every 5 epochs
+        gamma=0.1       # Multiply LR by 0.1 at each step
     )
     
     # Training and testing logs
@@ -146,11 +141,10 @@ def main():
     for epoch in range(1, epochs + 1):
         print(f"\nEpoch {epoch}")
         train_loss, train_acc = train(model, device, train_loader, optimizer, epoch, criterion)
-        scheduler.step(train_loss)
         test_loss, test_acc = test(model, device, test_loader, criterion)
         
-        # Step the scheduler based on test loss
-        #scheduler.step(test_loss)
+        # Step the scheduler after each epoch
+        scheduler.step()
         
         # Log metrics
         train_losses.append(train_loss)
