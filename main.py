@@ -6,8 +6,6 @@ import numpy as np
 from tqdm import tqdm
 from models.model import DilatedNet
 from utils.transforms import get_transforms
-import torch.nn.functional as F
-from torchinfo import torchinfo
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 def train(model, device, train_loader, optimizer, epoch, criterion):
@@ -93,11 +91,10 @@ def main():
     # Training Parameters
     batch_size = 128
     epochs = 15
-    lr = 0.01
+    lr = 0.05  # Increased learning rate
     momentum = 0.9
     
     # Calculate mean and std of CIFAR10
-    # Download training data temporarily to calculate mean and std
     temp_dataset = datasets.CIFAR10('./data', train=True, download=True)
     temp_data = torch.tensor(np.transpose(temp_dataset.data, (0, 3, 1, 2))) / 255.0
     mean = temp_data.mean(dim=(0, 2, 3)).numpy().tolist()
@@ -106,35 +103,9 @@ def main():
     # Get transforms
     train_transform, test_transform = get_transforms(mean, std)
     
-    # Custom Dataset with Albumentations
-    class AlbumentationDataset:
-        def __init__(self, dataset, transform=None):
-            self.dataset = dataset
-            self.transform = transform
-            
-        def __len__(self):
-            return len(self.dataset)
-        
-        def __getitem__(self, idx):
-            image = self.dataset[idx][0]
-            label = self.dataset[idx][1]
-            
-            if self.transform:
-                image = np.array(image)
-                transformed = self.transform(image=image)
-                image = transformed["image"]
-            
-            return image, label
-    
     # Load CIFAR10 Dataset
-    trainset = AlbumentationDataset(
-        datasets.CIFAR10('./data', train=True, download=True),
-        transform=train_transform
-    )
-    testset = AlbumentationDataset(
-        datasets.CIFAR10('./data', train=False, download=True),
-        transform=test_transform
-    )
+    trainset = datasets.CIFAR10('./data', train=True, download=True, transform=train_transform)
+    testset = datasets.CIFAR10('./data', train=False, download=True, transform=test_transform)
     
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True)
     test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False)
@@ -143,24 +114,18 @@ def main():
     model = DilatedNet().to(device)
     get_model_summary(model, input_size=(batch_size, 3, 32, 32))
     
-    optimizer = optim.SGD(
-        model.parameters(),
-        lr=0.01,
-        momentum=0.9,
-        weight_decay=1e-4
-    )
-    
-    # Define the loss function
+    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=1e-4)
     criterion = nn.CrossEntropyLoss()
-
-    # Replace OneCycleLR with ReduceLROnPlateau
+    
+    # Initialize the ReduceLROnPlateau scheduler
     scheduler = ReduceLROnPlateau(
         optimizer,
         mode='min',
-        factor=0.5,
+        factor=0.3,
         patience=2,
         verbose=True,
-        min_lr=1e-4
+        min_lr=1e-4,
+        threshold=1e-3
     )
     
     # Training and testing logs
