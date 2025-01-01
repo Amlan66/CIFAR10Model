@@ -50,15 +50,24 @@ class DilatedNet(nn.Module):
         )
         
         self.gap = nn.AdaptiveAvgPool2d(1)
-        self.dropout = nn.Dropout(0.2)
+        self.dropout1 = nn.Dropout(0.1)
+        self.dropout2 = nn.Dropout(0.1)
+        self.dropout3 = nn.Dropout(0.2)
         self.fc = nn.Linear(96, 10)  # Changed from 128 to 96
 
     def forward(self, x):
         x = self.conv1(x)
+        x = self.dropout1(x)
+        
         x = self.conv2(x)
+        x = self.dropout2(x)
+        
         x = self.conv3(x)
+        x = self.dropout2(x)
+        
         x = self.conv4(x)
         x = self.gap(x)
+        x = self.dropout3(x)
         x = x.view(-1, 96)  # Changed from 128 to 96
         x = self.fc(x)
         return x

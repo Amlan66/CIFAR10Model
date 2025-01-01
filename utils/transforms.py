@@ -19,9 +19,20 @@ def get_transforms(mean, std):
         A.Compose([
             A.Normalize(mean=mean, std=std),
             A.HorizontalFlip(p=0.5),
-            A.ShiftScaleRotate(shift_limit=0.0625, scale_limit=0.1, rotate_limit=15),
-            A.CoarseDropout(max_holes=1, max_height=16, max_width=16, min_holes=1, 
-                           min_height=16, min_width=16, fill_value=mean, mask_fill_value=None),
+            A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.1, rotate_limit=15, p=0.5),
+            A.CoarseDropout(
+                max_holes=8,
+                max_height=8,
+                max_width=8,
+                min_holes=1,
+                min_height=8,
+                min_width=8,
+                fill_value=mean,
+                mask_fill_value=None,
+                p=0.5
+            ),
+            A.RandomBrightnessContrast(p=0.3),
+            A.GaussNoise(var_limit=(10.0, 50.0), p=0.2),
             ToTensorV2(),
         ])
     )

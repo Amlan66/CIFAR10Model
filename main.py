@@ -115,18 +115,25 @@ def main():
     model = DilatedNet().to(device)
     get_model_summary(model, input_size=(batch_size, 3, 32, 32))
     
-    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=1e-4)
+    optimizer = optim.SGD(
+        model.parameters(),
+        lr=0.1,
+        momentum=0.9,
+        weight_decay=5e-4,  # Increased from 1e-4 for better regularization
+        nesterov=True       # Added Nesterov momentum
+    )
     criterion = nn.CrossEntropyLoss()
     
-    # Initialize the ReduceLROnPlateau scheduler
+    # Modified scheduler for better LR adjustment
     scheduler = ReduceLROnPlateau(
         optimizer,
         mode='min',
-        factor=0.5,    # Changed from 0.3 to 0.5
-        patience=1,    # Changed from 2 to 1
+        factor=0.2,         # More aggressive reduction
+        patience=2,         # Wait for 2 epochs
         verbose=True,
         min_lr=1e-4,
-        threshold=1e-2  # Changed from 1e-3 to 1e-2
+        threshold=1e-3,
+        cooldown=1          # Add cooldown period
     )
     
     # Training and testing logs
