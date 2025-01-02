@@ -4,7 +4,7 @@ import torch.optim as optim
 from torchvision import datasets
 import numpy as np
 from tqdm import tqdm
-from models.model import DilatedNet
+from models.modelThree import DilatedNet
 from utils.transforms import get_transforms
 from torch.optim.lr_scheduler import OneCycleLR
 import torchinfo
@@ -96,11 +96,9 @@ def main():
     lr = 0.1  # Increased from 0.05 to 0.1
     momentum = 0.9
     
-    # Calculate mean and std of CIFAR10
-    temp_dataset = datasets.CIFAR10('./data', train=True, download=True)
-    temp_data = torch.tensor(np.transpose(temp_dataset.data, (0, 3, 1, 2))) / 255.0
-    mean = temp_data.mean(dim=(0, 2, 3)).numpy().tolist()
-    std = temp_data.std(dim=(0, 2, 3)).numpy().tolist()
+    # Standard CIFAR10 mean and std values
+    mean = [0.4914, 0.4822, 0.4465]
+    std = [0.2470, 0.2435, 0.2616]
     
     # Get transforms
     train_transform, test_transform = get_transforms(mean, std)
