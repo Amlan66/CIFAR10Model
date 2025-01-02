@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torchsummary import summary
 
 class DilatedNet(nn.Module):
     def __init__(self):
