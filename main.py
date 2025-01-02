@@ -120,7 +120,7 @@ def main():
     
     optimizer = optim.SGD(
         model.parameters(),
-        lr=0.01,  # Lower initial learning rate
+        lr=0.01,  # Starting with a lower learning rate
         momentum=0.9,
         weight_decay=1e-4,  # Reduced weight decay
         nesterov=True
