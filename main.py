@@ -119,9 +119,9 @@ def main():
     
     optimizer = optim.SGD(
         model.parameters(),
-        lr=0.5,
+        lr=0.01,  # Lower initial learning rate
         momentum=0.9,
-        weight_decay=5e-4,
+        weight_decay=1e-4,  # Reduced weight decay
         nesterov=True
     )
     criterion = nn.CrossEntropyLoss()
@@ -139,10 +139,15 @@ def main():
     # )
 
     # StepLR configuration
-    scheduler = torch.optim.lr_scheduler.StepLR(
+    scheduler = torch.optim.lr_scheduler.OneCycleLR(
         optimizer,
-        step_size=2,  # Step down every 3 epochs
-        gamma=0.5     # Reduce learning rate by half
+        max_lr=0.1,  # Peak learning rate
+        epochs=15,
+        steps_per_epoch=len(train_loader),
+        pct_start=0.2,  # Warm up for 20% of training
+        div_factor=10,  # Initial lr = max_lr/10
+        final_div_factor=100,  # Final lr = initial_lr/100
+        anneal_strategy='cos'
     )
     
     # Training and testing logs

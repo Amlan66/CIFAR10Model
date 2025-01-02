@@ -7,44 +7,43 @@ class DilatedNet(nn.Module):
         
         # C1 Block - Initial block with standard conv
         self.c1 = nn.Sequential(
-            nn.Conv2d(3, 24, kernel_size=3, padding=1, bias=False),  # RF: 3
-            nn.BatchNorm2d(24),
+            nn.Conv2d(3, 32, kernel_size=3, padding=1, bias=False),  # 32 channels
+            nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.Dropout(0.1)
+            nn.Dropout(0.05)
         )
         
         # C2 Block - Dilated convolution
         self.c2 = nn.Sequential(
-            nn.Conv2d(24, 48, kernel_size=3, padding=2, dilation=2, bias=False),  # RF: 7
-            nn.BatchNorm2d(48),
+            nn.Conv2d(32, 64, kernel_size=3, padding=2, dilation=2, bias=False),  # 64 channels
+            nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.Dropout(0.1)
+            nn.Dropout(0.05)
         )
         
         # C3 Block - Depthwise Separable convolution
         self.c3 = nn.Sequential(
             # Depthwise
-            nn.Conv2d(48, 48, kernel_size=3, padding=1, groups=48, bias=False),  # RF: 15
-            nn.BatchNorm2d(48),
+            nn.Conv2d(64, 64, kernel_size=3, padding=1, groups=64, bias=False),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
             # Pointwise
-            nn.Conv2d(48, 96, kernel_size=1, bias=False),
-            nn.BatchNorm2d(96),
+            nn.Conv2d(64, 128, kernel_size=1, bias=False),  # 128 channels
+            nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.Dropout(0.1)
+            nn.Dropout(0.05)
         )
         
         # C4 Block - Final conv block before GAP
         self.c4 = nn.Sequential(
-            nn.Conv2d(96, 192, kernel_size=3, padding=1, stride=2, bias=False),  # RF: 33
-            nn.BatchNorm2d(192),
+            nn.Conv2d(128, 128, kernel_size=3, padding=1, stride=2, bias=False),  # Changed to 128 channels
+            nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.Dropout(0.1)
+            nn.Dropout(0.05)
         )
         
-        # Global Average Pooling and Final FC layer
         self.gap = nn.AdaptiveAvgPool2d(1)
-        self.fc = nn.Linear(192, 10)
+        self.fc = nn.Linear(128, 10)  # Changed to 128 input features
 
     def forward(self, x):
         x = self.c1(x)
@@ -52,6 +51,6 @@ class DilatedNet(nn.Module):
         x = self.c3(x)
         x = self.c4(x)
         x = self.gap(x)
-        x = x.view(-1, 192)
+        x = x.view(-1, 128)  # Changed to 128
         x = self.fc(x)
         return x
