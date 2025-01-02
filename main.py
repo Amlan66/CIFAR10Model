@@ -91,7 +91,7 @@ def main():
     
     # Training Parameters
     batch_size = 128
-    epochs = 15
+    epochs = 20
     lr = 0.1  # Increased from 0.05 to 0.1
     momentum = 0.9
     
@@ -141,7 +141,7 @@ def main():
     # StepLR configuration
     scheduler = torch.optim.lr_scheduler.StepLR(
         optimizer,
-        step_size=3,  # Step down every 3 epochs
+        step_size=2,  # Step down every 3 epochs
         gamma=0.5     # Reduce learning rate by half
     )
     
