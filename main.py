@@ -120,34 +120,22 @@ def main():
     
     optimizer = optim.SGD(
         model.parameters(),
-        lr=0.01,  # Starting with a lower learning rate
+        lr=0.02,  # Increased initial learning rate
         momentum=0.9,
-        weight_decay=1e-4,  # Reduced weight decay
+        weight_decay=5e-4,  # Keeping the same weight decay
         nesterov=True
     )
     criterion = nn.CrossEntropyLoss()
     
-    # Replace OneCycleLR with StepLR
-    # scheduler = OneCycleLR(
-    #     optimizer,
-    #     max_lr=0.5,
-    #     total_steps=total_steps,
-    #     pct_start=pct_start,
-    #     div_factor=10.0,     # initial_lr = max_lr/div_factor
-    #     final_div_factor=1e4,  # min_lr = initial_lr/final_div_factor
-    #     three_phase=False,
-    #     anneal_strategy='cos'
-    # )
-
-    # StepLR configuration
+    # Modified OneCycleLR for faster convergence
     scheduler = torch.optim.lr_scheduler.OneCycleLR(
         optimizer,
-        max_lr=0.1,  # Peak learning rate
+        max_lr=0.2,  # Higher peak learning rate
         epochs=15,
         steps_per_epoch=len(train_loader),
-        pct_start=0.2,  # Warm up for 20% of training
-        div_factor=10,  # Initial lr = max_lr/10
-        final_div_factor=100,  # Final lr = initial_lr/100
+        pct_start=0.3,  # Longer warmup period (30% of training)
+        div_factor=10,  # initial_lr = max_lr/10
+        final_div_factor=100,
         anneal_strategy='cos'
     )
     
