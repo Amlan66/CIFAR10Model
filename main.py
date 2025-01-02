@@ -92,7 +92,7 @@ def main():
     
     # Training Parameters
     batch_size = 128
-    epochs = 20
+    epochs = 15
     lr = 0.1  # Increased from 0.05 to 0.1
     momentum = 0.9
     
