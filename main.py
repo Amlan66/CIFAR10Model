@@ -4,7 +4,7 @@ import torch.optim as optim
 from torchvision import datasets
 import numpy as np
 from tqdm import tqdm
-from models.modelThree import DilatedNet
+from models.newModel import DilatedNet
 from utils.transforms import get_transforms
 from torch.optim.lr_scheduler import OneCycleLR
 import torchinfo
@@ -93,8 +93,6 @@ def main():
     # Training Parameters
     batch_size = 128
     epochs = 15
-    lr = 0.1  # Increased from 0.05 to 0.1
-    momentum = 0.9
     
     # Standard CIFAR10 mean and std values
     mean = [0.4914, 0.4822, 0.4465]
@@ -114,29 +112,22 @@ def main():
     model = DilatedNet().to(device)
     get_model_summary(model, input_size=(batch_size, 3, 32, 32))
     
+    optimizer = torch.optim.Adam(model.parameters(), 
+                                lr=0.001, 
+                                weight_decay=1e-4)
+    criterion = nn.NLLLoss()
+    
     # Calculate total steps for OneCycleLR
     total_steps = epochs * len(train_loader)
-    pct_start = 0.3
-    
-    optimizer = optim.SGD(
-        model.parameters(),
-        lr=0.02,  # Increased initial learning rate
-        momentum=0.9,
-        weight_decay=5e-4,  # Keeping the same weight decay
-        nesterov=True
-    )
-    criterion = nn.NLLLoss()  # Use Negative Log Likelihood Loss
-    
-    # Modified OneCycleLR for faster convergence
+    # Add Learning Rate Scheduler
     scheduler = torch.optim.lr_scheduler.OneCycleLR(
         optimizer,
-        max_lr=0.2,  # Higher peak learning rate
-        epochs=15,
-        steps_per_epoch=len(train_loader),
-        pct_start=0.3,  # Longer warmup period (30% of training)
-        div_factor=10,  # initial_lr = max_lr/10
-        final_div_factor=100,
-        anneal_strategy='cos'
+        max_lr=0.01,              # Peak learning rate
+        total_steps=total_steps,
+        pct_start=0.3,            # 30% of training in warmup
+        div_factor=10,            # Initial LR = max_lr/10
+        final_div_factor=100,     # Final LR = max_lr/1000
+        anneal_strategy='cos'     # Cosine annealing
     )
     
     # Training and testing logs
