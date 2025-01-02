@@ -125,7 +125,7 @@ def main():
         weight_decay=5e-4,  # Keeping the same weight decay
         nesterov=True
     )
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.NLLLoss()  # Use Negative Log Likelihood Loss
     
     # Modified OneCycleLR for faster convergence
     scheduler = torch.optim.lr_scheduler.OneCycleLR(

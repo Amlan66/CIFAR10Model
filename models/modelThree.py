@@ -65,4 +65,4 @@ class DilatedNet(nn.Module):
         x = self.gap(x)
         x = x.view(-1, 72)
         x = self.fc(x)
-        return x
+        return F.log_softmax(x, dim=1)  # Use log softmax for NLLLoss
