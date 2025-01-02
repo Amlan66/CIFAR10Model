@@ -130,13 +130,13 @@ def main():
     # Replace StepLR with OneCycleLR
     scheduler = OneCycleLR(
         optimizer,
-        max_lr=1.0,
+        max_lr=0.5,
         total_steps=total_steps,
         pct_start=pct_start,
         div_factor=10.0,     # initial_lr = max_lr/div_factor
         final_div_factor=1e4,  # min_lr = initial_lr/final_div_factor
         three_phase=False,
-        anneal_strategy='linear'
+        anneal_strategy='cos'
     )
     
     # Training and testing logs
