@@ -34,7 +34,6 @@ def train(model, device, train_loader, optimizer, epoch, criterion, scheduler):
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         
         optimizer.step()
-        scheduler.step()  # Step the scheduler every batch
         
         # Update Progress Bar
         pred = pred.argmax(dim=1, keepdim=True)
@@ -157,6 +156,8 @@ def main():
         print(f"\nEpoch {epoch}")
         train_loss, train_acc = train(model, device, train_loader, optimizer, epoch, criterion, scheduler)
         test_loss, test_acc = test(model, device, test_loader, criterion)
+        
+        scheduler.step()  # Step the scheduler here, once per epoch
         
         # Log metrics
         train_losses.append(train_loss)
