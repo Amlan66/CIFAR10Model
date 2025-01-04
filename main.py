@@ -115,6 +115,75 @@ def plot_misclassified(images, labels, preds, classes):
     writer.add_image('Misclassified Images', img_grid)
     writer.close()
 
+def get_misclassified_images(model, test_loader, device):
+    model.eval()
+    misclassified_images = []
+    true_labels = []
+    pred_labels = []
+    
+    with torch.no_grad():
+        for data, target in test_loader:
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+            pred = output.argmax(dim=1)
+            
+            # Find misclassified indices
+            misclassified_idx = (pred != target).nonzero(as_tuple=True)[0]
+            
+            # Store misclassified images and labels
+            misclassified_images.extend(data[misclassified_idx])
+            true_labels.extend(target[misclassified_idx])
+            pred_labels.extend(pred[misclassified_idx])
+            
+            if len(misclassified_images) >= 10:  # Get at least 10 images
+                break
+    
+    # Convert lists to tensors
+    misclassified_images = torch.stack(misclassified_images[:10])
+    true_labels = torch.stack(true_labels[:10])
+    pred_labels = torch.stack(pred_labels[:10])
+    
+    return misclassified_images, true_labels, pred_labels
+
+def plot_misclassified(images, true_labels, pred_labels, class_names):
+    writer = SummaryWriter('runs/experiment_1')
+    
+    # If images is already a tensor, don't stack it
+    if isinstance(images, torch.Tensor):
+        img_grid = torchvision.utils.make_grid(images)
+    else:
+        # If images is a list of tensors, then stack them
+        img_grid = torchvision.utils.make_grid(torch.stack(images))
+    
+    # Add normalization if needed
+    img_grid = img_grid.cpu()  # Move to CPU if it's on GPU
+    
+    # Log to tensorboard
+    writer.add_image('Misclassified Images', img_grid)
+    
+    # Create figure with class names and predictions
+    fig, axes = plt.subplots(2, 5, figsize=(15, 6))
+    axes = axes.ravel()
+    
+    for idx, ax in enumerate(axes):
+        img = images[idx].cpu()
+        img = img.permute(1, 2, 0)  # Change from CxHxW to HxWxC
+        
+        # Denormalize if your images are normalized
+        mean = torch.tensor([0.485, 0.456, 0.406])
+        std = torch.tensor([0.229, 0.224, 0.225])
+        img = img * std + mean
+        img = torch.clamp(img, 0, 1)
+        
+        ax.imshow(img)
+        ax.set_title(f'True: {class_names[true_labels[idx]]}\nPred: {class_names[pred_labels[idx]]}')
+        ax.axis('off')
+    
+    plt.tight_layout()
+    plt.savefig('misclassified.png')  # Save the plot as an image file
+    plt.close()
+    writer.close()
+
 def main():
     # Set random seed for reproducibility
     torch.manual_seed(42)
@@ -194,6 +263,18 @@ def main():
                       misclassified_labels[:10], 
                       misclassified_preds[:10], 
                       classes)
+
+    # After training is complete
+    class_names = ['airplane', 'automobile', 'bird', 'cat', 'deer', 
+                   'dog', 'frog', 'horse', 'ship', 'truck']
+    
+    print("\nGenerating misclassified images...")
+    misclassified_images, true_labels, pred_labels = get_misclassified_images(model, test_loader, device)
+    plot_misclassified(misclassified_images, true_labels, pred_labels, class_names)
+    print("Misclassified images have been saved as 'misclassified.png'")
+    print("You can also view them in Tensorboard by running:")
+    print("tensorboard --logdir=runs --port=6006")
+    print("And then creating an SSH tunnel to your local machine")
 
 if __name__ == '__main__':
     main() 
