@@ -125,7 +125,7 @@ def main():
     
     # Training Parameters
     batch_size = 128
-    epochs = 30
+    epochs = 5
     
     # Standard CIFAR10 mean and std values
     mean = [0.4914, 0.4822, 0.4465]
