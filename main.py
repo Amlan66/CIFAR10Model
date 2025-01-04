@@ -8,6 +8,12 @@ from models.modelThree import DilatedNet
 from utils.transforms import get_transforms
 from torch.optim.lr_scheduler import OneCycleLR
 import torchinfo
+import matplotlib.pyplot as plt
+
+# CIFAR10 classes
+classes = ('plane', 'car', 'bird', 'cat', 'deer',
+           'dog', 'frog', 'horse', 'ship', 'truck')
+
 
 def train(model, device, train_loader, optimizer, epoch, criterion, scheduler):
     model.train()
@@ -45,10 +51,13 @@ def train(model, device, train_loader, optimizer, epoch, criterion, scheduler):
     
     return train_loss/len(train_loader), 100*correct/processed
 
-def test(model, device, test_loader, criterion):
+def test(model, device, test_loader, criterion, epoch):
     model.eval()
     test_loss = 0
     correct = 0
+    misclassified_images = []
+    misclassified_labels = []
+    misclassified_preds = []
     
     with torch.no_grad():
         for data, target in test_loader:
@@ -57,12 +66,19 @@ def test(model, device, test_loader, criterion):
             test_loss += criterion(output, target).item()
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
+
+            # Store misclassified samples
+            misclassified_mask = ~pred.eq(target.view_as(pred)).squeeze()
+            if misclassified_mask.any():
+                misclassified_images.append(data[misclassified_mask])
+                misclassified_labels.append(target[misclassified_mask])
+                misclassified_preds.append(pred[misclassified_mask])
     
     test_loss /= len(test_loader)
     accuracy = 100. * correct / len(test_loader.dataset)
     
     print(f'\nTest set: Average loss: {test_loss:.4f}, Accuracy: {correct}/{len(test_loader.dataset)} ({accuracy:.2f}%)\n')
-    return test_loss, accuracy
+    return test_loss, accuracy, misclassified_images, misclassified_labels, misclassified_preds
 
 def get_model_summary(model, input_size=(1, 3, 32, 32)):
     """
@@ -81,6 +97,17 @@ def get_model_summary(model, input_size=(1, 3, 32, 32)):
     print("\nTotal Parameters:", sum(p.numel() for p in model.parameters()))
     print("Trainable Parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))
     return summary
+
+def plot_misclassified(images, labels, preds, classes):
+    fig = plt.figure(figsize=(20, 10))
+    for i in range(10):
+        plt.subplot(2, 5, i + 1)
+        plt.tight_layout()
+        plt.imshow(images[i].cpu().squeeze().permute(1, 2, 0))
+        plt.title(f'Predicted: {classes[preds[i]]}\nActual: {classes[labels[i]]}')
+        plt.xticks([])
+        plt.yticks([])
+    plt.show()
 
 def main():
     # Set random seed for reproducibility
@@ -140,7 +167,7 @@ def main():
     for epoch in range(1, epochs + 1):
         print(f"\nEpoch {epoch}")
         train_loss, train_acc = train(model, device, train_loader, optimizer, epoch, criterion, scheduler)
-        test_loss, test_acc = test(model, device, test_loader, criterion)
+        test_loss, test_acc, misclassified_images, misclassified_labels, misclassified_preds = test(model, device, test_loader, criterion, epoch)
         
         # Log metrics
         train_losses.append(train_loss)
@@ -151,6 +178,16 @@ def main():
         print(f"Train Loss: {train_loss:.4f}, Train Accuracy: {train_acc:.2f}%")
         print(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_acc:.2f}%")
         print(f"Current Learning Rate: {optimizer.param_groups[0]['lr']:.6f}")
+
+    # Plot misclassified images from the last epoch
+    print("\nDisplaying 10 misclassified images from the last epoch:")
+    misclassified_images = torch.cat(misclassified_images)
+    misclassified_labels = torch.cat(misclassified_labels)
+    misclassified_preds = torch.cat(misclassified_preds)
+    plot_misclassified(misclassified_images[:10], 
+                      misclassified_labels[:10], 
+                      misclassified_preds[:10], 
+                      classes)
 
 if __name__ == '__main__':
     main() 
