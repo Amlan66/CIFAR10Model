@@ -92,7 +92,7 @@ def main():
     
     # Training Parameters
     batch_size = 128
-    epochs = 25
+    epochs = 30
     
     # Standard CIFAR10 mean and std values
     mean = [0.4914, 0.4822, 0.4465]
@@ -121,15 +121,14 @@ def main():
     total_steps = epochs * len(train_loader)
     # Add Learning Rate Scheduler
     scheduler = torch.optim.lr_scheduler.OneCycleLR(
-    optimizer,
-    max_lr=0.1,              # Keep peak LR
-    epochs=30,               # Increase epochs
-    steps_per_epoch=len(train_loader),
-    pct_start=0.3,          # Keep 30% warmup
-    div_factor=10,          # Initial LR = max_lr/10
-    final_div_factor=10,    # Reduce this to keep higher final LR
-    anneal_strategy='cos'
-)
+        optimizer,
+        max_lr=0.03,              # Peak learning rate
+        total_steps=total_steps,
+        pct_start=0.3,            # 30% of training in warmup
+        div_factor=10,            # Initial LR = max_lr/10
+        final_div_factor=300,     # Final LR = max_lr/1000
+        anneal_strategy='cos'     # Cosine annealing
+    )
     
     # Training and testing logs
     train_losses = []
