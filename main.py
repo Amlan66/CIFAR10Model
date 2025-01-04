@@ -4,7 +4,7 @@ import torch.optim as optim
 from torchvision import datasets
 import numpy as np
 from tqdm import tqdm
-from models.newModel import DilatedNet
+from models.modelThree import DilatedNet
 from utils.transforms import get_transforms
 from torch.optim.lr_scheduler import OneCycleLR
 import torchinfo
@@ -92,7 +92,7 @@ def main():
     
     # Training Parameters
     batch_size = 128
-    epochs = 15
+    epochs = 25
     
     # Standard CIFAR10 mean and std values
     mean = [0.4914, 0.4822, 0.4465]
