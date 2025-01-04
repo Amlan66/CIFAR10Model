@@ -9,6 +9,8 @@ from utils.transforms import get_transforms
 from torch.optim.lr_scheduler import OneCycleLR
 import torchinfo
 import matplotlib.pyplot as plt
+from torch.utils.tensorboard import SummaryWriter
+import torchvision
 
 # CIFAR10 classes
 classes = ('plane', 'car', 'bird', 'cat', 'deer',
@@ -99,6 +101,7 @@ def get_model_summary(model, input_size=(1, 3, 32, 32)):
     return summary
 
 def plot_misclassified(images, labels, preds, classes):
+    writer = SummaryWriter('runs/experiment_1')
     fig = plt.figure(figsize=(20, 10))
     for i in range(10):
         plt.subplot(2, 5, i + 1)
@@ -108,6 +111,9 @@ def plot_misclassified(images, labels, preds, classes):
         plt.xticks([])
         plt.yticks([])
     plt.show()
+    img_grid = torchvision.utils.make_grid(torch.stack(images))
+    writer.add_image('Misclassified Images', img_grid)
+    writer.close()
 
 def main():
     # Set random seed for reproducibility
