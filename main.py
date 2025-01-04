@@ -121,14 +121,15 @@ def main():
     total_steps = epochs * len(train_loader)
     # Add Learning Rate Scheduler
     scheduler = torch.optim.lr_scheduler.OneCycleLR(
-        optimizer,
-        max_lr=0.01,              # Peak learning rate
-        total_steps=total_steps,
-        pct_start=0.3,            # 30% of training in warmup
-        div_factor=10,            # Initial LR = max_lr/10
-        final_div_factor=100,     # Final LR = max_lr/1000
-        anneal_strategy='cos'     # Cosine annealing
-    )
+    optimizer,
+    max_lr=0.1,              # Keep peak LR
+    epochs=30,               # Increase epochs
+    steps_per_epoch=len(train_loader),
+    pct_start=0.3,          # Keep 30% warmup
+    div_factor=10,          # Initial LR = max_lr/10
+    final_div_factor=10,    # Reduce this to keep higher final LR
+    anneal_strategy='cos'
+)
     
     # Training and testing logs
     train_losses = []
